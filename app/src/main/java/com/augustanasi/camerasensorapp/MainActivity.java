@@ -5,12 +5,20 @@ import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.hardware.Camera;
+import android.net.Uri;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
+import android.os.AsyncTask;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 
 import java.io.BufferedInputStream;
@@ -36,13 +44,90 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     Camera.ShutterCallback shutterCallback;
     Camera.PictureCallback pngCallBack;
     Context context;
+    Button takeImg;
+    Button startBtn;
+    Button socketListen;
+    static File storageDir;
+    SocketConnection socketConnection;
+
+
+    int port = 5678;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         context = getApplicationContext();
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        startBtn = (Button)findViewById(R.id.start);
+        takeImg = (Button)findViewById(R.id.take);
+        takeImg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                captureImage();
+            }
+        });
+       /* startBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try{
+                    while(socketConnection.waitForPrompt()){
+                        captureImage();
+                        socketConnection.sendImage(newImg);
+                    }
+
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+                            }
+        });*/
+
+
+
+        socketListen = (Button)findViewById(R.id.listen);
+        socketListen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        startCamera();
+                        try{
+                            socketConnection = new SocketConnection(port);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        try{
+                            while(socketConnection.waitForPrompt()){
+                                captureImage();
+                                //camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
+                                Log.d("Image","Started Image Capture");
+
+                            }
+                            Log.d("Socket","Exited While Loop");
+
+                        }catch (IOException e){
+                            e.printStackTrace();
+                        }
+                        stopCamera();
+                        socketConnection.closeSocket();
+                    }
+                });
+
+            }
+        });
+
+        storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AugustanaRobotImgs");
+        if(!storageDir.exists()){
+            storageDir.mkdir();
+        }
+
+
+
 
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         surfaceHolder = surfaceView.getHolder();
@@ -50,57 +135,92 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         rawCallBack = new Camera.PictureCallback() {
             public void onPictureTaken(byte[] data, Camera camera) {
-
+                Log.d("Log","onPictureTaken - raw");
             }
         };
 
         shutterCallback = new Camera.ShutterCallback() {
             public void onShutter() {
-
+                Log.i("Log","onshutter'd");
             }
         };
-
         pngCallBack = new Camera.PictureCallback() {
+            @Override
             public void onPictureTaken(byte[] data, Camera camera) {
+                Log.d("HERE","HERE");
                 FileOutputStream outputStream;
-                File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AppPics");
-                File image = new File(storageDir, "image.png");
 
-                try {
+                String state = Environment.getExternalStorageState();
+                Log.d("State", "State - "+state);
+                Log.d("LOCATION","Storage Location: "+storageDir.exists());
+                Log.d("LOCATION","Storage Location: "+storageDir.toString());
+                File image = new File(storageDir, "image.png");
+                Log.d("Location","Image - "+image.exists());
+
+                try{
                     outputStream = new FileOutputStream(image);
                     outputStream.write(data);
                     outputStream.close();
-                } catch (FileNotFoundException e) {
+                    Log.d("Log", "onPictureTaken - wrote bytes: "+data.length);
+                } catch(FileNotFoundException e){
                     e.printStackTrace();
-                } catch (IOException e) {
+                } catch(IOException e){
                     e.printStackTrace();
                 } finally {
-
+                    //outputStream.close();
                 }
+                Log.d("Log", "onPictureTaken - png");
+                camera.stopPreview();
+                camera.startPreview();
+                try{
+                    Log.d("Socket","Check if continue");
+                    //if(socketConnection.waitForPrompt()){
+                        Log.d("Socket","Continue");
+                        socketConnection.sendImage(image);
+
+                  /*  }
+                    else{
+                        Log.d("Socket","Don't continue");
+                    }*/
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
+
+
             }
         };
+        //startCamera();
+        //captureImage();
 
-        startCamera();
-        int port = 5678;
-        try {
+        /*try{
+            socketConnection.sendImage(image);
+
+        }catch (IOException e){
+            e.printStackTrace();
+        }*/
+        //TransferThread transferThread = new TransferThread(socketConnection);
+        //transferThread.run();
+
+
+
+        /* try{
             ServerSocket server = new ServerSocket(port);
             server.setSoTimeout(0);
+
             Socket client = server.accept();
 
-            File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),"AppPics");
-            File image = new File(storageDir,"image.png");
+
 
             BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream()));
             String str = br.readLine();
 
             while(str!=null){
-                captureImage();
-                byte[] fileBytes = new byte[(int)image.length()];
-                BufferedInputStream bis = new BufferedInputStream(new FileInputStream(image));
-                bis.read(fileBytes, 0, fileBytes.length);
-                OutputStream os = client.getOutputStream();
-                os.write(fileBytes,0,fileBytes.length);
-                os.flush();
+                if(str.equalsIgnoreCase("picture")){
+                    captureImage();
+                    byte[] fileBytes = new byte[(int)image.length()];
+
+
+                }
                 str=br.readLine();
             }
             client.close();
@@ -108,15 +228,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }catch (IOException e){
 
-        }
+        }*/
     }
-
-    private void captureImage(){
+    public void captureImage(){
         camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
-        stopCamera();
-        startCamera();
     }
-
     private void startCamera(){
         if(Camera.getNumberOfCameras()>0){
             if(getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)){
@@ -134,21 +250,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         param.setPreviewFrameRate(40);
         param.setPreviewSize(surfaceView.getWidth(),surfaceView.getHeight());
         camera.setParameters(param);
+        camera.setDisplayOrientation(90);
 
         try{
             camera.setPreviewDisplay(surfaceHolder);
             camera.startPreview();
         }catch (Exception e){
-            return;
+            Log.e("MainActivity","init_camera: "+e);
         }
+        Log.d("CAMERA","Started");
     }
 
     private void stopCamera(){
         camera.stopPreview();
         camera.release();
-        surfaceView.clearFocus();
+        //surfaceView.clearFocus();
     }
-
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -164,4 +281,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void surfaceDestroyed(SurfaceHolder holder) {
 
     }
+}
+
+class TransferThread extends Thread{
+    SocketConnection connection;
+    public TransferThread(SocketConnection c){
+        connection = c;
+    }
+    public void run(){
+        /*try {
+            connection.sendImage();
+        }catch(IOException e){
+            e.printStackTrace();
+        }*/
+
+    }
+
 }
