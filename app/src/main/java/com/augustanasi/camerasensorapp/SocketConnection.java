@@ -41,14 +41,20 @@ public class SocketConnection {
         br = new BufferedReader(new InputStreamReader(client.getInputStream()));
     }
 
-    public boolean waitForPrompt() throws IOException{
+    public int waitForPrompt() throws IOException{
         String str = br.readLine();
+        if(str.equals(null)){
+            str = br.readLine();
+        }
         if(str.equalsIgnoreCase("pic")){
             Log.d("Socket","Read In "+str);
-            return true;
+            return 1;
+        }
+        if(str.equalsIgnoreCase("stop")){
+            return 0;
         }
         Log.d("Socket","Read In "+str);
-        return false;
+        return -1;
     }
 
 
@@ -76,6 +82,9 @@ public class SocketConnection {
                 dos.flush();
     }
 
+    public void listenReStart(){
+
+    }
     public void closeSocket(){
         try{
             client.close();

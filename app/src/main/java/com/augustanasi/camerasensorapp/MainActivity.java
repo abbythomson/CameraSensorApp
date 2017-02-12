@@ -95,25 +95,49 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 AsyncTask.execute(new Runnable() {
                     @Override
                     public void run() {
+                        boolean cameraOpen = true;
                         startCamera();
+                        Log.d("camera started", "sensor is listening");
                         try{
+                            Log.d("starting connection", "attempting to create a socket connect with port: " + port);
                             socketConnection = new SocketConnection(port);
+                            Log.d("socket created", "socket connection: " + socketConnection.toString());
                         }catch (Exception e){
                             e.printStackTrace();
                         }
                         try{
-                            while(socketConnection.waitForPrompt()){
-                                captureImage();
-                                //camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
-                                Log.d("Image","Started Image Capture");
+                            Log.d("wait for prompt", "will call waitForPrompt:");
+                            int currentInput = socketConnection.waitForPrompt();
+                            boolean stopped = false;
+                             while(currentInput!=-1){
+                                 System.out.println("Current Input = "+currentInput);
+                                if(currentInput==0){
+                                    System.out.println("Stop Camera");
+                                    cameraOpen = false;
+                                    stopCamera();
+                                    stopped = true;
+                                }else{
+                                    if(stopped){
+                                        System.out.println("Restart Camera");
+                                        cameraOpen = true;
+                                        startCamera();
+                                    }
+                                    captureImage();
+                                    //camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
+                                    Log.d("Image","Started Image Capture");
 
+                                }
+                                currentInput = socketConnection.waitForPrompt();
                             }
+
                             Log.d("Socket","Exited While Loop");
 
                         }catch (IOException e){
                             e.printStackTrace();
                         }
-                        stopCamera();
+                        if(cameraOpen){
+                            stopCamera();
+                        }
                         socketConnection.closeSocket();
                     }
                 });
@@ -261,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Log.d("CAMERA","Started");
     }
 
-    private void stopCamera(){
+    public void stopCamera(){
         camera.stopPreview();
         camera.release();
         //surfaceView.clearFocus();
