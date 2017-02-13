@@ -18,34 +18,13 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
         android:id="@+id/surfaceView"
-        android:layout_above="@+id/take" />
-
-    <Button
-        android:text="Start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:id="@+id/start" />
-
-    <Button
-        android:text="Take"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="31dp"
-        android:layout_marginStart="31dp"
-        android:id="@+id/take"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@+id/start"
-        android:layout_toEndOf="@+id/start" />
+        android:layout_above="@+id/listen" />
 
     <Button
         android:text="Start Listening"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:id="@+id/listen"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:id="@+id/listen" />
+        android:layout_centerHorizontal="true" />
 </RelativeLayout>

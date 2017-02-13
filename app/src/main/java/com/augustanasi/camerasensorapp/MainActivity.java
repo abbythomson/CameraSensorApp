@@ -2,37 +2,21 @@ package com.augustanasi.camerasensorapp;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Canvas;
-import android.graphics.Rect;
 import android.hardware.Camera;
-import android.net.Uri;
-import android.nfc.NfcAdapter;
-import android.nfc.NfcEvent;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 @SuppressWarnings("deprecation")
 
@@ -63,31 +47,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
-        startBtn = (Button)findViewById(R.id.start);
-        takeImg = (Button)findViewById(R.id.take);
-        takeImg.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                captureImage();
-            }
-        });
-       /* startBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try{
-                    while(socketConnection.waitForPrompt()){
-                        captureImage();
-                        socketConnection.sendImage(newImg);
-                    }
-
-                }catch (IOException e){
-                    e.printStackTrace();
-                }
-                            }
-        });*/
-
-
-
         socketListen = (Button)findViewById(R.id.listen);
         socketListen.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -114,13 +73,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                 if(currentInput==0){
                                     System.out.println("Stop Camera");
                                     cameraOpen = false;
-                                    stopCamera();
+                                    camera.stopPreview();
                                     stopped = true;
                                 }else{
                                     if(stopped){
                                         System.out.println("Restart Camera");
                                         cameraOpen = true;
-                                        startCamera();
+                                        camera.startPreview();
                                     }
                                     captureImage();
                                     //camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
