@@ -24,7 +24,6 @@ public class SocketConnection {
 
     private Socket client;
     private ServerSocket server;
-    //private OutputStreamWriter os;
     private File img;
     private BufferedReader br;
     private DataOutputStream dos;
@@ -36,7 +35,6 @@ public class SocketConnection {
         Log.d("Socket","Waiting for connection");
         client = server.accept();
         Log.d("Socket","Connected");
-        //os = new OutputStreamWriter(client.getOutputStream());
         dos = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()));
         br = new BufferedReader(new InputStreamReader(client.getInputStream()));
     }
@@ -65,26 +63,18 @@ public class SocketConnection {
                    Log.d("Socket", "File not NULL");
                }
                 dos.writeInt((int)img.length());
-               // os.write((int)img.length()+"\n");
                 Log.d("Socket",""+img.length());
                dos.flush();
-               // os.flush();
-
 
                 byte[] fileBytes = new byte[(int)img.length()];
-                //OutputStream os = client.getOutputStream();
                 BufferedInputStream bis = new BufferedInputStream(new FileInputStream(img));
                 bis.read(fileBytes, 0, fileBytes.length);
                 Log.d("Socket","Sending "+img.toString()+" ("+fileBytes.length+" bytes)");
                 dos.write(fileBytes);
-               // os.write(fileBytes,0,fileBytes.length);
                 Log.d("Socket","Sent Message: Complete");
                 dos.flush();
     }
 
-    public void listenReStart(){
-
-    }
     public void closeSocket(){
         try{
             client.close();

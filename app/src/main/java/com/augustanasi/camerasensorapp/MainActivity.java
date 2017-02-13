@@ -1,11 +1,13 @@
 package com.augustanasi.camerasensorapp;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.StrictMode;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +15,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -20,6 +24,10 @@ import java.io.IOException;
 
 @SuppressWarnings("deprecation")
 
+/**
+ *This class starts the devices camera and when prompted by the Control App, takes a picture and sends it back to the Control App.
+ * Requires the device has a back-facing camera.
+ */
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
     Camera camera;
     SurfaceView surfaceView;
@@ -43,10 +51,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         setContentView(R.layout.activity_main);
 
         context = getApplicationContext();
-
+  
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
+        if(getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)){
+            new AlertDialog.Builder(this)
+                    .setTitle("Required Camera")
+                    .setMessage("This app requires the device to have a back facing camera")
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    })
+                    .show();
+        }
         socketListen = (Button)findViewById(R.id.listen);
         socketListen.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,7 +102,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                         camera.startPreview();
                                     }
                                     captureImage();
-                                    //camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
                                     Log.d("Image","Started Image Capture");
 
                                 }
@@ -150,21 +169,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 } catch(IOException e){
                     e.printStackTrace();
                 } finally {
-                    //outputStream.close();
                 }
                 Log.d("Log", "onPictureTaken - png");
                 camera.stopPreview();
                 camera.startPreview();
                 try{
-                    Log.d("Socket","Check if continue");
-                    //if(socketConnection.waitForPrompt()){
-                        Log.d("Socket","Continue");
-                        socketConnection.sendImage(image);
-
-                  /*  }
-                    else{
-                        Log.d("Socket","Don't continue");
-                    }*/
+                    socketConnection.sendImage(image);
                 }catch(IOException e){
                     e.printStackTrace();
                 }
@@ -172,57 +182,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             }
         };
-        //startCamera();
-        //captureImage();
-
-        /*try{
-            socketConnection.sendImage(image);
-
-        }catch (IOException e){
-            e.printStackTrace();
-        }*/
-        //TransferThread transferThread = new TransferThread(socketConnection);
-        //transferThread.run();
-
-
-
-        /* try{
-            ServerSocket server = new ServerSocket(port);
-            server.setSoTimeout(0);
-
-            Socket client = server.accept();
-
-
-
-            BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String str = br.readLine();
-
-            while(str!=null){
-                if(str.equalsIgnoreCase("picture")){
-                    captureImage();
-                    byte[] fileBytes = new byte[(int)image.length()];
-
-
-                }
-                str=br.readLine();
-            }
-            client.close();
-            stopCamera();
-
-        }catch (IOException e){
-
-        }*/
     }
+
+
     public void captureImage(){
         camera.takePicture(shutterCallback,rawCallBack,pngCallBack);
     }
+
+
     private void startCamera(){
         if(Camera.getNumberOfCameras()>0){
-            if(getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)){
-                camera = Camera.open(0);
-            }else {
-                camera = Camera.open();
-            }
+            camera = Camera.open();
         }else{
             return;
         }
@@ -247,7 +217,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void stopCamera(){
         camera.stopPreview();
         camera.release();
-        //surfaceView.clearFocus();
     }
 
     @Override
@@ -266,18 +235,3 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 }
 
-class TransferThread extends Thread{
-    SocketConnection connection;
-    public TransferThread(SocketConnection c){
-        connection = c;
-    }
-    public void run(){
-        /*try {
-            connection.sendImage();
-        }catch(IOException e){
-            e.printStackTrace();
-        }*/
-
-    }
-
-}
