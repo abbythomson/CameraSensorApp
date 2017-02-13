@@ -51,6 +51,9 @@ public class SocketConnection {
         if(str.equalsIgnoreCase("stop")){
             return 0;
         }
+        if(str.equalsIgnoreCase("closing")){
+            return -5;
+        }
         Log.d("Socket","Read In "+str);
         return -1;
     }

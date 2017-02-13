@@ -51,21 +51,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         setContentView(R.layout.activity_main);
 
         context = getApplicationContext();
-  
+
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-
-        if(getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)){
-            new AlertDialog.Builder(this)
-                    .setTitle("Required Camera")
-                    .setMessage("This app requires the device to have a back facing camera")
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            finish();
-                        }
-                    })
-                    .show();
+        if(camera.getNumberOfCameras()<2) {
+            if (getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)) {
+                new AlertDialog.Builder(this)
+                          .setTitle("Required Camera")
+                        .setMessage("This app requires the device to have a back facing camera")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                finish();
+                            }
+                        })
+                        .show();
+            }
         }
         socketListen = (Button)findViewById(R.id.listen);
         socketListen.setOnClickListener(new View.OnClickListener() {
@@ -88,6 +89,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                             Log.d("wait for prompt", "will call waitForPrompt:");
                             int currentInput = socketConnection.waitForPrompt();
                             boolean stopped = false;
+                            if(currentInput==-5){
+                                finish();
+                            }
                              while(currentInput!=-1){
                                  System.out.println("Current Input = "+currentInput);
                                 if(currentInput==0){
